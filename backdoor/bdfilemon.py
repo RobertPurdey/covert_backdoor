@@ -24,6 +24,7 @@ class FileMonitor(object):
 
     def add_watch(self, path, filename=None, recursive=False):
         print(str(path))
+        print(str(filename))
         self.watches.append(self.observer.schedule(FSEventHandler(filename), path,
                                                    recursive))
 
