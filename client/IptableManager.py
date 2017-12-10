@@ -40,6 +40,7 @@ class IptableManager(object):
         if time_to_live > 0:
             time.sleep(time_to_live)
             self.close_connection(protocol, ip, port)
+            print('rule closed')
 
     def open_connection(self, protocol, ip, port):
         os.system(self.build_add_input_rule(protocol, ip, port))
@@ -53,10 +54,10 @@ class IptableManager(object):
         return "iptables -A INPUT -p " + protocol + " --dport " + port + " -s " + ip + " -m conntrack --ctstate NEW,ESTABLISHED -j ACCEPT"
 
     def build_add_output_rule(self, protocol, ip, port):
-        return "iptables -A OUTPUT -p " + protocol + " --sport " + port + " -s " + ip +  " -m conntrack --ctstate ESTABLISHED -j ACCEPT"
+        return "iptables -A OUTPUT -p " + protocol + " --sport " + port + " -d " + ip +  " -m conntrack --ctstate ESTABLISHED -j ACCEPT"
 
     def build_remove_input_rule(self, protocol, ip, port):
         return "iptables -D INPUT -p " + protocol + " --dport " + port + " -s " + ip +  " -m conntrack --ctstate NEW,ESTABLISHED -j ACCEPT"
 
     def build_remove_output_rule(self, protocol, ip, port):
-        return "iptables -D OUTPUT -p " + protocol + " --sport " + port + " -s " + ip +  " -m conntrack --ctstate ESTABLISHED -j ACCEPT"
+        return "iptables -D OUTPUT -p " + protocol + " --sport " + port + " -d " + ip +  " -m conntrack --ctstate ESTABLISHED -j ACCEPT"

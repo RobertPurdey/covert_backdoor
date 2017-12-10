@@ -104,9 +104,10 @@ class AESCipher:
                     with open(filename, 'wb') as outfile:
                         while True:
                             chunk = infile.read(CHUNKSIZE)
-                            if len(chunk) == 0 or len(chunk) != CHUNKSIZE:
+                            if len(chunk) == 0: # or len(chunk) != CHUNKSIZE:
                                 break
-                            outfile.write(dec.decrypt(chunk))
+                            decrypted = dec.decrypt(chunk)
+                            outfile.write(decrypted)
 
                         outfile.truncate(filesize)
                 except IOError as e:

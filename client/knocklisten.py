@@ -11,7 +11,6 @@ class KnockListener(object):
         self.aes_cipher = AESCipher("password")
 
     def listen(self):
-        print('Listening...')
         sniff(filter='udp and ip', prn=self.handle_packets)
 
     def handle_packets(self, pkt):
@@ -62,7 +61,7 @@ class KnockListener(object):
         # add an iptables rule to allow a connection from ip
         i = "s"
 
-        self.iptable_manager.manage_port_rules("tcp", ip, "7004", 10, True)
+        self.iptable_manager.manage_port_rules("tcp", ip, "7004", 3, True)
 
         # New thread to listen on socket and receive file transfer
         tcp_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -74,17 +73,17 @@ class KnockListener(object):
 
         # write encrypted data to a file
         tcp_socket.listen(1)
+        print('waiting for connection')
         connection, a = tcp_socket.accept()
+        print('received connection')
 
         # Open dummy file to receive data
         received_data = open("encrypted_recv.txt", "wb")
 
         while True:
             data = connection.recv(1024)
-            print("DATA: " + data)
 
             if data.endswith("EOF"):
-                print("Received EOF")
                 data = data[:-3]
                 received_data.write(data)
                 break
@@ -96,10 +95,9 @@ class KnockListener(object):
         connection.close()
 
         # Decrypt received data
-        print("GOING INTO DECRYPT")
         self.aes_cipher.decrypt_file("encrypted_recv.txt")
-        print("after????")
-
+        os.remove('encrypted_recv.txt')
+        print('file received')
 
 if __name__ == '__main__':
     KnockListener().listen()
