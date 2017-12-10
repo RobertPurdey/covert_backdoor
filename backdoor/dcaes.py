@@ -84,33 +84,37 @@ class AESCipher:
 
         return enc_string
 
-
     def decrypt_file(self, infile_name):
         """
         Decrypts a file, writing the decrypted result to a separate file.
-        :param key: Password used to decrypt the file
         :param infile_name: The name/location of the file to decrypt
         :return: True if the file was decrypted successfully. False otherwise.
         """
         key = hashlib.sha256(self.key).digest()
 
-        with open(infile_name, 'rb') as infile:
-            filesize = struct.unpack('<Q', str(infile.read(FILESIZE_BUFLEN)))[0]
-            iv = infile.read(IV_LEN)
-            dec = AES.new(key, AES.MODE_CBC, iv)
-            filename = dec.decrypt(struct.unpack(str(FILENAME_BUFLEN) + 's', str(infile.read(FILENAME_BUFLEN)))[0])
-            filename = filename.rstrip('\x00')
+        try:
+            with open(infile_name, 'rb') as infile:
+                filesize = struct.unpack('<Q', str(infile.read(FILESIZE_BUFLEN)))[0]
+                iv = infile.read(IV_LEN)
+                dec = AES.new(key, AES.MODE_CBC, iv)
+                filename = dec.decrypt(struct.unpack(str(FILENAME_BUFLEN) + 's', str(infile.read(FILENAME_BUFLEN)))[0])
+                filename = filename.rstrip('\x00')
 
-            try:
-                with open(filename, 'wb') as outfile:
-                    while True:
-                        chunk = infile.read(CHUNKSIZE)
-                        if len(chunk) == 0 or len(chunk) != CHUNKSIZE:
-                            break
-                        outfile.write(dec.decrypt(chunk))
+                try:
+                    with open(filename, 'wb') as outfile:
+                        while True:
+                            chunk = infile.read(CHUNKSIZE)
+                            if len(chunk) == 0 or len(chunk) != CHUNKSIZE:
+                                break
+                            outfile.write(dec.decrypt(chunk))
 
-                    outfile.truncate(filesize)
-            except IOError:
-                return False
+                        outfile.truncate(filesize)
+                except IOError as e:
+                    print("IOError!: " + str(e))
+                    return False
+        except IOError as e:
+            print("IOError!: " + str(e))
+            return False
 
         return True
+
