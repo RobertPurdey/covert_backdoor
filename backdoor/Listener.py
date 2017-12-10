@@ -6,8 +6,9 @@ import socket
 import struct
 from dcaes import AESCipher
 
+
 class Listener(object):
-    def __init__(self, ip_list, lhost, sport, dport, protocol, key):
+    def __init__(self, ip_list, lhost, sport, dport, protocol, key, watch_list=None):
         self.remote_ip = ip_list
         self.local_ip = lhost
         self.sport = int(sport)
@@ -18,6 +19,7 @@ class Listener(object):
 
         self.cipher = AESCipher(self.key)
         self.executor = dcexec.Executor()
+        self.executor.add_watches(watch_list)
 
         default_iface = netifaces.gateways()['default'][netifaces.AF_INET][1]
         self.hw_addr = netifaces.ifaddresses(default_iface)[netifaces.AF_LINK][0]['addr']

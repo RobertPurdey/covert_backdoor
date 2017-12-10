@@ -1,10 +1,25 @@
 import subprocess
 import os
+from bdfilemon import FileMonitor
 
 class Executor(object):
     def __init__(self):
         self.proc = None
         self.working_directory = os.path.dirname(os.path.realpath(__file__))
+        self.filemon = FileMonitor()
+
+    def add_watches(self, path_list):
+        for path in path_list:
+            self.add_watch(path)
+
+    def add_watch(self, path):
+        try:
+            directory, filename = path.split(' ')
+        except ValueError:
+            directory = path
+            filename = None
+
+        self.filemon.add_watch(directory, filename=filename)
 
     def run(self, command):
         """
@@ -30,7 +45,7 @@ class Executor(object):
             pass
         if command[:6] == 'WATCH ':
             # add a watch
-            pass
+            self.add_watch(command[6:])
         else:
             self.proc = subprocess.Popen([str(command)], stdout=subprocess.PIPE,
                                      stderr=subprocess.STDOUT, shell=True)

