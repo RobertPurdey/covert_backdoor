@@ -69,7 +69,7 @@ class AESCipher:
 
         enc_string = (struct.pack('<Q', filesize))
         enc_string += iv
-        enc_string += (enc.encrypt(struct.pack(str(FILENAME_BUFLEN) + 's', infile_name)))
+        enc_string += (enc.encrypt(struct.pack(str(FILENAME_BUFLEN) + 's', os.path.basename(infile_name))))
 
         with open(infile_name, 'rb') as infile:
             while True:

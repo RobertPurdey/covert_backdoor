@@ -2,6 +2,7 @@ import subprocess
 import os
 from bdfilemon import FileMonitor
 
+
 class Executor(object):
     def __init__(self):
         self.proc = None
@@ -46,7 +47,8 @@ class Executor(object):
         if command[:6] == 'WATCH ':
             # add a watch
             self.add_watch(command[6:])
+            return 'Watch added', None
         else:
             self.proc = subprocess.Popen([str(command)], stdout=subprocess.PIPE,
-                                     stderr=subprocess.STDOUT, shell=True)
+                                         stderr=subprocess.STDOUT, shell=True)
             return self.proc.communicate()
