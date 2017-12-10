@@ -1,10 +1,14 @@
 #!/usr/bin/env python
 from scapy.all import *
+from IptableManager import IptableManager
+from dcaes import AESCipher
 
 class KnockListener(object):
     def __init__(self):
         self.port_list = [8000, 9000, 7000]
         self.incoming_ips = {}
+        self.iptable_manager = IptableManager()
+        self.aes_cipher = AESCipher()
 
     def listen(self):
         print('Listening...')
@@ -51,12 +55,41 @@ class KnockListener(object):
         if self.incoming_ips[src_ip] == self.port_list:
             print('Knock sequence accepted from ' + src_ip)
             self.incoming_ips.pop(src_ip)
-            self.accept_connection(src_ip, port_num)
+            self.accept_connection(src_ip)
 
 
-    def accept_connection(self, ip, port):
+    def accept_connection(self, ip):
         # add an iptables rule to allow a connection from ip
         i = "s"
+
+        self.iptable_manager.manage_port_rules("TCP", ip, "7005", 10, True)
+
+        # Open dummy file to receive data
+        received_data = open("encrypted_recv.txt", "wb")
+
+        # New thread to listen on socket and receive file transfer
+        tcp_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        host_ip = socket.gethostbyname(socket.gethostname())
+
+        tcp_socket.bind(host_ip, ip)
+
+        # write encrypted data to a file
+        connection, a = tcp_socket.accept()
+
+        while True:
+            data = connection.recv(1024)
+
+            if data.endswith("EOF"):
+                data = data[:-3]
+                received_data.write(data)
+                break
+
+            received_data.write(data)
+
+        received_data.close()
+
+        # Decrypt received data
+        self.aes_cipher.decrypt_file("encrypted_recv.txt")
 
 
 

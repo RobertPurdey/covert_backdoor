@@ -1,11 +1,11 @@
-from RuleManager import RuleManager
+from IptableManager import IptableManager
 import time
 
 """
     Testing that the port is opening / closing the IPTABLES rules as expected
 """
 if __name__ == '__main__':
-    pOpener = RuleManager()
+    pOpener = IptableManager()
 
     pOpener.manage_port_rules("TCP", "192.168.0.18", "8505", 5, True)
     print("Expect instant print of this because new thread starts in manage_port_rules")

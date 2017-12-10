@@ -3,7 +3,7 @@ import time
 import thread
 
 
-class RuleManager(object):
+class IptableManager(object):
     """
     Handles opening the specified port using IPTABLES firewall rules
     """
