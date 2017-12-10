@@ -56,6 +56,8 @@ class KnockListener(object):
 
     def accept_connection(self, ip, port):
         # add an iptables rule to allow a connection from ip
+        i = "s"
+
 
 
 if __name__ == '__main__':

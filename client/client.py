@@ -8,6 +8,8 @@ import struct
 import argparse
 import netifaces
 import os
+import ConfigParser
+
 from dcaes import AESCipher
 
 
@@ -118,26 +120,45 @@ class CommandClient(object):
 
 def main():
     """
-    Main function for the client program. Parses command line args and and starts the client.
+    Main function for the client program. Parses config file and and starts the client.
     :return: None
     """
-    parser = argparse.ArgumentParser()
-    parser.add_argument('-r', '--remote_host', dest='remote_host',
-                        required=True, help='The IP address of the client')
-    parser.add_argument('-l', '--local_host', dest='local_host',
-                        required=True, help='The IP address of this machine')
-    parser.add_argument('-s', '--sport', dest='sport', required=True,
-                       help='Source port')
-    parser.add_argument('-d', '--dport', dest='dport', required=True,
-                       help='Destination port')
-    parser.add_argument('-p', '--proto', dest='proto', required=True,
-                        help='The protocol to use: TCP or UDP')
-    parser.add_argument('-k', '--key', dest='key', required=True,
-                       help='Encryption key required for encrypting and decrypting commands and responses')
-    args = parser.parse_args()
 
-    client = CommandClient(args.remote_host, args.local_host, args.sport,
-                           args.dport, args.proto, args.key)
+    # Load config file to parse
+    client_config = ConfigParser.ConfigParser()
+    client_config.read('client.config')
+
+    # Extract client config settings
+    remote_host = client_config.get('Setup', 'remote_host')
+    local_host  = client_config.get('Setup', 'local_host')
+    sport       = client_config.get('Setup', 'sport')
+    dport       = client_config.get('Setup', 'dport')
+    protocol    = client_config.get('Setup', 'protocol')
+    key         = client_config.get('Setup', 'key')
+
+    #parser = argparse.ArgumentParser()
+    #parser.add_argument('-r', '--remote_host', dest='remote_host',
+    #                    required=True, help='The IP address of the client')
+    #parser.add_argument('-l', '--local_host', dest='local_host',
+    #                    required=True, help='The IP address of this machine')
+    #parser.add_argument('-s', '--sport', dest='sport', required=True,
+    #                   help='Source port')
+    #parser.add_argument('-d', '--dport', dest='dport', required=True,
+    #                   help='Destination port')
+    #parser.add_argument('-p', '--proto', dest='proto', required=True,
+    #                    help='The protocol to use: TCP or UDP')
+    #parser.add_argument('-k', '--key', dest='key', required=True,
+    #                  help='Encryption key required for encrypting and decrypting commands and responses')
+    #args = parser.parse_args()
+
+    client = CommandClient(
+        remote_host,
+        local_host,
+        sport,
+        dport,
+        protocol,
+        key)
+
     client.start()
 
 if __name__ == '__main__':
