@@ -159,8 +159,8 @@ def main():
     protocol          = client_config.get('Setup', 'protocol')
     key               = client_config.get('Setup', 'key')
     exfiltration_port = client_config.get('KnockListener', 'exfiltration_port')
+    time_to_live      = client_config.get('KnockListener', 'time_to_live')
     keylog_filename   = client_config.get('Keylogger', 'filename')
-    time_to_live      = client_config.get('Keylogger', 'time_to_live')
 
     client = CommandClient(
         remote_host,
