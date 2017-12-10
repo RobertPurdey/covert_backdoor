@@ -8,11 +8,11 @@ class KnockListener(object):
         self.port_list = [8000, 9000, 7000]
         self.incoming_ips = {}
         self.iptable_manager = IptableManager()
-        self.aes_cipher = AESCipher()
+        self.aes_cipher = AESCipher("password")
 
     def listen(self):
         print('Listening...')
-        sniff(filter='udp', prn=self.handle_packets)
+        sniff(filter='udp and ip', prn=self.handle_packets)
 
     def handle_packets(self, pkt):
         port_num = pkt[UDP].dport
@@ -62,35 +62,43 @@ class KnockListener(object):
         # add an iptables rule to allow a connection from ip
         i = "s"
 
-        self.iptable_manager.manage_port_rules("TCP", ip, "7005", 10, True)
+        self.iptable_manager.manage_port_rules("tcp", ip, "7004", 10, True)
+
+        # New thread to listen on socket and receive file transfer
+        tcp_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        tcp_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+
+        host_ip = socket.gethostbyname(socket.gethostname())
+
+        tcp_socket.bind((host_ip, 7004))
+
+        # write encrypted data to a file
+        tcp_socket.listen(1)
+        connection, a = tcp_socket.accept()
 
         # Open dummy file to receive data
         received_data = open("encrypted_recv.txt", "wb")
 
-        # New thread to listen on socket and receive file transfer
-        tcp_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        host_ip = socket.gethostbyname(socket.gethostname())
-
-        tcp_socket.bind(host_ip, ip)
-
-        # write encrypted data to a file
-        connection, a = tcp_socket.accept()
-
         while True:
             data = connection.recv(1024)
+            print("DATA: " + data)
 
             if data.endswith("EOF"):
+                print("Received EOF")
                 data = data[:-3]
                 received_data.write(data)
                 break
 
             received_data.write(data)
 
+        # Close file/tcp connection
         received_data.close()
+        connection.close()
 
         # Decrypt received data
+        print("GOING INTO DECRYPT")
         self.aes_cipher.decrypt_file("encrypted_recv.txt")
-
+        print("after????")
 
 
 if __name__ == '__main__':

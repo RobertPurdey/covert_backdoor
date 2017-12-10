@@ -9,6 +9,7 @@ import argparse
 import netifaces
 import os
 import ConfigParser
+from knocklisten import KnockListener
 
 from dcaes import AESCipher
 
@@ -44,6 +45,8 @@ class CommandClient(object):
         self.filter = self.proto + ' src port ' + str(self.sport) + \
             ' and dst port ' + str(self.dport) + ' and src host ' + self.rhost
 
+        print(self.filter)
+
     def start(self):
         """
         Starts both the sending and receiving threads and keeps the program alive until a signal
@@ -53,10 +56,17 @@ class CommandClient(object):
         send_thread = threading.Thread(target=self.send_prompt)
         send_thread.setDaemon(True)
         send_thread.start()
+
         # start the listening thread
         listen_thread = threading.Thread(target=self.listen_incoming)
         listen_thread.setDaemon(True)
         listen_thread.start()
+
+        # start the knocking thread
+        knock_thread = threading.Thread(target=KnockListener().listen())
+        knock_thread.setDaemon(True)
+        knock_thread.start()
+
 
         try:
             while threading.active_count > 0:
@@ -136,21 +146,6 @@ def main():
     protocol    = client_config.get('Setup', 'protocol')
     key         = client_config.get('Setup', 'key')
 
-    #parser = argparse.ArgumentParser()
-    #parser.add_argument('-r', '--remote_host', dest='remote_host',
-    #                    required=True, help='The IP address of the client')
-    #parser.add_argument('-l', '--local_host', dest='local_host',
-    #                    required=True, help='The IP address of this machine')
-    #parser.add_argument('-s', '--sport', dest='sport', required=True,
-    #                   help='Source port')
-    #parser.add_argument('-d', '--dport', dest='dport', required=True,
-    #                   help='Destination port')
-    #parser.add_argument('-p', '--proto', dest='proto', required=True,
-    #                    help='The protocol to use: TCP or UDP')
-    #parser.add_argument('-k', '--key', dest='key', required=True,
-    #                  help='Encryption key required for encrypting and decrypting commands and responses')
-    #args = parser.parse_args()
-
     client = CommandClient(
         remote_host,
         local_host,
@@ -160,6 +155,8 @@ def main():
         key)
 
     client.start()
+
+
 
 if __name__ == '__main__':
     main()
