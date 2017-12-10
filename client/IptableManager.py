@@ -27,6 +27,11 @@ class IptableManager(object):
 
     def open_port(self,  protocol, ip, port, time_to_live):
         """
+        Creates an acceptance rule for the ip/port/protocol specified. After the duration of time_to_live (seconds)
+        the acceptance rules are removed.
+
+        If time_to_live is 0, the rule will not be removed unless a call to close_connection is made using the
+        matching ip/protocol/port this call was made with.
 
         :param protocol:
         :param port:
