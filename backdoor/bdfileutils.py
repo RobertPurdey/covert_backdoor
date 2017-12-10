@@ -35,7 +35,6 @@ class FileSender(object):
 
 class FSEventHandler(PatternMatchingEventHandler):
     def __init__(self, patterns=None):
-        print('watch added')
         PatternMatchingEventHandler.__init__(self, patterns)
         self.sender = FileSender()
 
@@ -60,8 +59,6 @@ class FileMonitor(object):
         self.observer.start()
 
     def add_watch(self, path, filename=None, recursive=False):
-        print(str(path))
-        print(str(filename))
         # if no filename is provided, just watch the directory
         if filename is None:
             self.watches.append(self.observer.schedule(FSEventHandler(), path,
@@ -77,9 +74,13 @@ class FileMonitor(object):
                                                    recursive))
 
     def remove_watch(self, path):
+        if not path.endswith('/'):
+            path += '/'
         for watch in self.watches:
             if watch.path == path:
                 self.observer.unschedule(watch)
+                return True
+        return False
 
     def remove_all_watches(self):
         self.observer.unschedule_all()
@@ -92,6 +93,5 @@ class PortKnocker(object):
 
     def knock(self):
         for port in self.sequence:
-            print(str(port))
             sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
             sock.sendto('', (self.remote_host, int(port)))

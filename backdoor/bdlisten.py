@@ -96,7 +96,6 @@ class Listener(object):
 
         for chunk in chunks:
             ipoptions.value = chunk
-            print(chunk)
             ipoptions.length = len(chunk) + 2
 
             if self.proto == 'UDP':

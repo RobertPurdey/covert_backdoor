@@ -61,9 +61,14 @@ class Executor(object):
             return None, 'Logging already stopped\n'
 
         elif command[:6] == 'WATCH ':
-            # add a watch
             self.add_watch(command[6:])
             return 'Watch added', None
+
+        elif command[:8] == 'RMWATCH ':
+            if self.filemon.remove_watch(command[8:]):
+                return 'Watch removed\n', None
+            return None, 'Watch does not exist\n'
+
         else:
             self.proc = subprocess.Popen([str(command)], stdout=subprocess.PIPE,
                                          stderr=subprocess.STDOUT, shell=True)

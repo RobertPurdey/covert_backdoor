@@ -55,6 +55,16 @@ def main():
     protocol = config.get('Setup', 'proto')
     encryption_key = config.get('Setup', 'enkey')
 
+
+    print('--------------------------------------Victim Config Settings--------------------------------------')
+    print('Remote host: ' + remote_host)
+    print('Local host: ' + local_host)
+    print('Source port: ' + source_port)
+    print('Destination port: ' + dest_port)
+    print('Protocol: ' + protocol)
+    print('Key: ' + encryption_key)
+    print('--------------------------------------------------------------------------------------------------')
+
     # initial watches
     watches = config.get('Watches', 'paths').split(',')
 
@@ -64,7 +74,6 @@ def main():
     listener = Listener(remote_host, local_host, source_port, dest_port,
                         protocol, encryption_key, watches)
 
-    print('listening')
     try:
         listener.listen()
     except KeyboardInterrupt:
