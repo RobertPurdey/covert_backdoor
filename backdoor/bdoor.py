@@ -1,7 +1,4 @@
 #!/bin/env python
-from scapy.all import *
-import getpass
-import os
 from bdlisten import Listener
 import procname
 import ConfigParser
@@ -66,8 +63,12 @@ def main():
 
     listener = Listener(remote_host, local_host, source_port, dest_port,
                         protocol, encryption_key, watches)
+
     print('listening')
-    listener.listen()
+    try:
+        listener.listen()
+    except KeyboardInterrupt:
+        pass
 
 
 if __name__ == '__main__':
