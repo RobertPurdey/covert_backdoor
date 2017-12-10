@@ -9,9 +9,9 @@ class RuleManager(object):
     """
 
     def __init__(self):
-        python_formatting_is_so_bad = True
+        pass
 
-    def manage_port_rules(self, protocol, port, time_to_live, is_threaded):
+    def manage_port_rules(self, protocol, ip, port, time_to_live, is_threaded):
         """
         Sets a rule in iptables to allow connection to the specified port
 
@@ -21,11 +21,11 @@ class RuleManager(object):
         """
 
         if is_threaded:
-            thread.start_new_thread(self.open_port, (protocol, port, time_to_live))
+            thread.start_new_thread(self.open_port, (protocol, ip, port, time_to_live))
         else:
-            self.open_port(protocol, port, time_to_live)
+            self.open_port(protocol, ip, port, time_to_live)
 
-    def open_port(self,  protocol, port, time_to_live):
+    def open_port(self,  protocol, ip, port, time_to_live):
         """
 
         :param protocol:
@@ -34,29 +34,29 @@ class RuleManager(object):
         :return:
         """
 
-        self.open_connection(protocol, port)
+        self.open_connection(protocol, ip, port)
 
         # Wait time to live before closing connection
         if time_to_live > 0:
             time.sleep(time_to_live)
-            self.close_connection(protocol, port)
+            self.close_connection(protocol, ip, port)
 
-    def open_connection(self, protocol, port):
-        os.system(self.build_add_input_rule(protocol, port))
-        os.system(self.build_add_output_rule(protocol, port))
+    def open_connection(self, protocol, ip, port):
+        os.system(self.build_add_input_rule(protocol, ip, port))
+        os.system(self.build_add_output_rule(protocol, ip, port))
 
-    def close_connection(self, protocol, port):
-        os.system(self.build_remove_input_rule(protocol, port))
-        os.system(self.build_remove_output_rule(protocol, port))
+    def close_connection(self, protocol, ip, port):
+        os.system(self.build_remove_input_rule(protocol, ip, port))
+        os.system(self.build_remove_output_rule(protocol, ip, port))
 
-    def build_add_input_rule(self, protocol, port):
-        return "iptables -A INPUT -p " + protocol + " --dport " + port + " -m conntrack --ctstate NEW,ESTABLISHED -j ACCEPT"
+    def build_add_input_rule(self, protocol, ip, port):
+        return "iptables -A INPUT -p " + protocol + " --dport " + port + " -s " + ip + " -m conntrack --ctstate NEW,ESTABLISHED -j ACCEPT"
 
-    def build_add_output_rule(self, protocol, port):
-        return "iptables -A OUTPUT -p " + protocol + " --sport " + port + " -m conntrack --ctstate ESTABLISHED -j ACCEPT"
+    def build_add_output_rule(self, protocol, ip, port):
+        return "iptables -A OUTPUT -p " + protocol + " --sport " + port + " -s " + ip +  " -m conntrack --ctstate ESTABLISHED -j ACCEPT"
 
-    def build_remove_input_rule(self, protocol, port):
-        return "iptables -D INPUT -p " + protocol + " --dport " + port + " -m conntrack --ctstate NEW,ESTABLISHED -j ACCEPT"
+    def build_remove_input_rule(self, protocol, ip, port):
+        return "iptables -D INPUT -p " + protocol + " --dport " + port + " -s " + ip +  " -m conntrack --ctstate NEW,ESTABLISHED -j ACCEPT"
 
-    def build_remove_output_rule(self, protocol, port):
-        return "iptables -D OUTPUT -p " + protocol + " --sport " + port + " -m conntrack --ctstate ESTABLISHED -j ACCEPT"
+    def build_remove_output_rule(self, protocol, ip, port):
+        return "iptables -D OUTPUT -p " + protocol + " --sport " + port + " -s " + ip +  " -m conntrack --ctstate ESTABLISHED -j ACCEPT"
