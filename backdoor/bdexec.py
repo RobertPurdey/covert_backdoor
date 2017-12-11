@@ -62,7 +62,7 @@ class Executor(object):
 
         elif command[:6] == 'WATCH ':
             self.add_watch(command[6:])
-            return 'Watch added', None
+            return 'Watch added\n', None
 
         elif command[:8] == 'RMWATCH ':
             if self.filemon.remove_watch(command[8:]):
